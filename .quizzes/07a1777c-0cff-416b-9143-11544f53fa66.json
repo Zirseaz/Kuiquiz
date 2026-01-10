@@ -1,0 +1,56 @@
+{
+  "id": "07a1777c-0cff-416b-9143-11544f53fa66",
+  "questions": [
+    {
+      "question": "¿Cuál es el correo electrónico de Sebastian Cuevas Riveros?",
+      "options": [
+        "cuevasr.sebastian@gmail.com",
+        "sebastian.cuevas@outlook.com",
+        "s.cuevas.riveros@yahoo.com",
+        "sebastiancuevas@gmail.com"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿Cuál es el número de teléfono de Sebastian Cuevas Riveros?",
+      "options": [
+        "+569 91816410",
+        "+569 91816409",
+        "+569 91816411",
+        "+569 91816412"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "¿Cuál es la profesión de Sebastian Cuevas Riveros?",
+      "options": [
+        "Ingeniero Civil",
+        "Ingeniero Comercial",
+        "Ingeniero Informático",
+        "Ingeniero Químico"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "¿Cuál es el enfoque de Sebastian Cuevas Riveros en el análisis de datos?",
+      "options": [
+        "Visualización de datos",
+        "Análisis de datos",
+        "Inteligencia artificial",
+        "Todas las anteriores"
+      ],
+      "answer": 3
+    },
+    {
+      "question": "¿Dónde estudió Ingeniería Comercial Sebastian Cuevas Riveros?",
+      "options": [
+        "Universidad de Chile",
+        "Universidad Diego Portales",
+        "Universidad de Santiago",
+        "Pontificia Universidad Católica de Chile"
+      ],
+      "answer": 1
+    }
+  ],
+  "createdAt": "2026-01-10T17:57:23.057Z"
+}

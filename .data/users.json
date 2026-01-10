@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "id": "9794fbca-22e8-4709-bae9-8c8ceb335b0a",
+      "username": "Sebatela",
+      "email": "cuevasr.sebastian@gmail.com",
+      "passwordHash": "$2b$10$AQgbkkDNCVTsqYgK1.7ZU.faXlCpD9Og9EdgNn3wbTaidPhpLd4A6",
+      "createdAt": "2026-01-10T17:56:57.581Z",
+      "stats": {
+        "gamesPlayed": 0,
+        "totalScore": 0,
+        "bestStreak": 0
+      }
+    }
+  ]
+}

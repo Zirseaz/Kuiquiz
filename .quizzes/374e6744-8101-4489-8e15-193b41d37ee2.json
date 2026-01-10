@@ -1,0 +1,56 @@
+{
+  "id": "374e6744-8101-4489-8e15-193b41d37ee2",
+  "questions": [
+    {
+      "question": "What does 'hola' mean in English?",
+      "options": [
+        "Goodbye",
+        "Hello",
+        "How are you?",
+        "What's up?"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "What language is 'hola' from?",
+      "options": [
+        "English",
+        "Spanish",
+        "French",
+        "German"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "What does 'chao' mean in English?",
+      "options": [
+        "Hello",
+        "Goodbye",
+        "How are you?",
+        "What's up?"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "What is 'chao' used for in the given text?",
+      "options": [
+        "To greet someone",
+        "To say goodbye",
+        "To ask a question",
+        "To make a statement"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "What is the purpose of 'hola' and 'chao' in the text?",
+      "options": [
+        "To ask questions",
+        "To make statements",
+        "To greet and say goodbye",
+        "To give directions"
+      ],
+      "answer": 2
+    }
+  ],
+  "createdAt": "2026-01-10T18:07:18.752Z"
+}

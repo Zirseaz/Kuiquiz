@@ -1,0 +1,56 @@
+{
+  "id": "3f145663-3eb1-49ad-af84-de839b10bc2a",
+  "questions": [
+    {
+      "question": "¿Cuál es el correo electrónico profesional de Sebastian Cuevas Riveros?",
+      "options": [
+        "cuevasr.sebastian@gmail.com",
+        "sebastian.cuevas@outlook.com",
+        "scuevas@live.com",
+        "sebastiancuevas@gmail.com"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿En qué universidad estudió Ingeniería Comercial Sebastian Cuevas Riveros?",
+      "options": [
+        "Universidad de Chile",
+        "Universidad Diego Portales",
+        "Universidad Católica",
+        "Universidad de Santiago"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "¿Cuál es el nombre de la empresa donde Sebastian Cuevas Riveros trabaja actualmente como Analista de Control de Gestión?",
+      "options": [
+        "Autofin",
+        "Outlier",
+        "Starn",
+        "FEMSA Salud"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿Qué certificación obtuvo Sebastian Cuevas Riveros en febrero de 2025?",
+      "options": [
+        "AI Agents Fundamentals",
+        "Elements of AI",
+        "Certificado en Marketing Digital",
+        "Certificado en Análisis de Datos"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿Cuál es el número de teléfono de Sebastian Cuevas Riveros?",
+      "options": [
+        "+569 91816409",
+        "+569 12345678",
+        "+569 90123456",
+        "+569 78901234"
+      ],
+      "answer": 0
+    }
+  ],
+  "createdAt": "2026-01-10T17:36:16.098Z"
+}

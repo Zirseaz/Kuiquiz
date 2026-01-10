@@ -1,0 +1,74 @@
+{
+  "entries": [
+    {
+      "nickname": "seba",
+      "score": 545,
+      "correctAnswers": 3,
+      "totalQuestions": 5,
+      "timeBonus": 185,
+      "timestamp": "2026-01-10T18:27:35.605Z",
+      "responses": [
+        {
+          "questionIndex": 0,
+          "isCorrect": false,
+          "timeSpent": 3
+        },
+        {
+          "questionIndex": 1,
+          "isCorrect": false,
+          "timeSpent": 2
+        },
+        {
+          "questionIndex": 2,
+          "isCorrect": true,
+          "timeSpent": 3
+        },
+        {
+          "questionIndex": 3,
+          "isCorrect": true,
+          "timeSpent": 2
+        },
+        {
+          "questionIndex": 4,
+          "isCorrect": true,
+          "timeSpent": 3
+        }
+      ]
+    },
+    {
+      "nickname": "seba",
+      "score": 545,
+      "correctAnswers": 3,
+      "totalQuestions": 5,
+      "timeBonus": 185,
+      "timestamp": "2026-01-10T18:27:35.631Z",
+      "responses": [
+        {
+          "questionIndex": 0,
+          "isCorrect": false,
+          "timeSpent": 3
+        },
+        {
+          "questionIndex": 1,
+          "isCorrect": false,
+          "timeSpent": 2
+        },
+        {
+          "questionIndex": 2,
+          "isCorrect": true,
+          "timeSpent": 3
+        },
+        {
+          "questionIndex": 3,
+          "isCorrect": true,
+          "timeSpent": 2
+        },
+        {
+          "questionIndex": 4,
+          "isCorrect": true,
+          "timeSpent": 3
+        }
+      ]
+    }
+  ]
+}

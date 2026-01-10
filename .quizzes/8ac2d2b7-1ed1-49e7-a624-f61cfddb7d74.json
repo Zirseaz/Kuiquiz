@@ -1,0 +1,56 @@
+{
+  "id": "8ac2d2b7-1ed1-49e7-a624-f61cfddb7d74",
+  "questions": [
+    {
+      "question": "¿Cuál es el correo electrónico de Sebastian Cuevas Riveros?",
+      "options": [
+        "cuevasr.sebastian@gmail.com",
+        "sebastian.cuevas.riveros@gmail.com",
+        "scuevas@gmail.com",
+        "sebastiancuevas@gmail.com"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿Cuál es el número de teléfono de Sebastian Cuevas Riveros?",
+      "options": [
+        "+569 91816409",
+        "+569 12345678",
+        "+569 98765432",
+        "+569 11111111"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿Cuál es la universidad donde estudió Sebastian Cuevas Riveros?",
+      "options": [
+        "Universidad Diego Portales",
+        "Universidad de Chile",
+        "Universidad Católica",
+        "Universidad de Santiago"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿Cuál es el cargo actual de Sebastian Cuevas Riveros en Autofin?",
+      "options": [
+        "Analista de Control de Gestión",
+        "Gerente de Marketing",
+        "Especialista de Arriendo de Espacios",
+        "Driver Growth Specialist"
+      ],
+      "answer": 0
+    },
+    {
+      "question": "¿Cuál es una de las herramientas que maneja Sebastian Cuevas Riveros?",
+      "options": [
+        "ChatGPT",
+        "Excel",
+        "Zoho Analytics",
+        "Todas las anteriores"
+      ],
+      "answer": 3
+    }
+  ],
+  "createdAt": "2026-01-10T17:41:33.371Z"
+}

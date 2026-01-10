@@ -1,0 +1,58 @@
+{
+  "id": "31480bff-e691-4bb7-a53b-cf922d76117a",
+  "creatorId": "9794fbca-22e8-4709-bae9-8c8ceb335b0a",
+  "creatorName": "Sebatela",
+  "questions": [
+    {
+      "question": "What does the text 'de que se trata la vida' translate to in English?",
+      "options": [
+        "What is life about?",
+        "What is the meaning of life?",
+        "What is life?",
+        "What is the life?"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "What is the main topic of the text 'de que se trata la vida'?",
+      "options": [
+        "The universe",
+        "Human existence",
+        "The meaning of life",
+        "Science"
+      ],
+      "answer": 2
+    },
+    {
+      "question": "What language is the text 'de que se trata la vida' written in?",
+      "options": [
+        "English",
+        "French",
+        "Spanish",
+        "German"
+      ],
+      "answer": 2
+    },
+    {
+      "question": "What is the tone of the text 'de que se trata la vida'?",
+      "options": [
+        "Humorous",
+        "Philosophical",
+        "Scientific",
+        "Historical"
+      ],
+      "answer": 1
+    },
+    {
+      "question": "What type of question does the text 'de que se trata la vida' pose?",
+      "options": [
+        "A scientific question",
+        "A philosophical question",
+        "A historical question",
+        "A mathematical question"
+      ],
+      "answer": 1
+    }
+  ],
+  "createdAt": "2026-01-10T18:26:57.166Z"
+}
