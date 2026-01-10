@@ -1,129 +1,92 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --primary: #a855f7;
-  --primary-glow: #a855f780;
-  --secondary: #22c55e;
-  --secondary-glow: #22c55e80;
-  --accent: #06b6d4;
-  --surface: #0f172a;
-  --surface-light: #1e293b;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 15, 23, 42;
+  /* Slate 950 */
+  --background-end-rgb: 2, 6, 23;
+  /* Slate 950 darken */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-secondary: var(--secondary);
-  --color-accent: var(--accent);
-  --color-surface: var(--surface);
-  --color-surface-light: var(--surface-light);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@layer base {
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    color: rgb(var(--foreground-rgb));
+    background: linear-gradient(to bottom,
+        transparent,
+        rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+    min-height: 100vh;
+  }
 }
 
-* {
-  box-sizing: border-box;
+@layer components {
+
+  /* Premium Glass Effect */
+  .glass-card {
+    @apply bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 shadow-2xl;
+  }
+
+  .glass-panel {
+    @apply bg-slate-900/40 backdrop-blur-md border border-slate-800/50;
+  }
+
+  /* Interactive Elements */
+  .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-200 shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-5 rounded-lg border border-slate-700 hover:border-slate-600 transition-all duration-200;
+  }
+
+  .input-field {
+    @apply w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all;
+  }
+
+  /* Utilities */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-indigo-400;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  min-height: 100vh;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Neon button styles */
-.btn-neon-purple {
-  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
-  box-shadow: 0 0 20px #a855f780, 0 0 40px #a855f740, inset 0 1px 0 rgba(255,255,255,0.2);
-  transition: all 0.3s ease;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.btn-neon-purple:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px #a855f7a0, 0 0 60px #a855f760, inset 0 1px 0 rgba(255,255,255,0.3);
+::-webkit-scrollbar-track {
+  background: #0f172a;
 }
 
-.btn-neon-green {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  box-shadow: 0 0 20px #22c55e80, 0 0 40px #22c55e40, inset 0 1px 0 rgba(255,255,255,0.2);
-  transition: all 0.3s ease;
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
 }
 
-.btn-neon-green:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px #22c55ea0, 0 0 60px #22c55e60, inset 0 1px 0 rgba(255,255,255,0.3);
-}
-
-.btn-neon-cyan {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-  box-shadow: 0 0 20px #06b6d480, 0 0 40px #06b6d440, inset 0 1px 0 rgba(255,255,255,0.2);
-  transition: all 0.3s ease;
-}
-
-.btn-neon-cyan:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 30px #06b6d4a0, 0 0 60px #06b6d460, inset 0 1px 0 rgba(255,255,255,0.3);
-}
-
-/* Glass effect */
-.glass {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Shake animation for wrong answers */
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-  20%, 40%, 60%, 80% { transform: translateX(10px); }
-}
-
-.shake {
-  animation: shake 0.6s ease-in-out;
-}
-
-/* Pulse glow animation */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px currentColor; }
-  50% { box-shadow: 0 0 40px currentColor, 0 0 60px currentColor; }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Upload zone styles */
-.upload-zone {
-  border: 2px dashed rgba(168, 85, 247, 0.5);
-  transition: all 0.3s ease;
-}
-
-.upload-zone:hover,
-.upload-zone.drag-over {
-  border-color: #a855f7;
-  background: rgba(168, 85, 247, 0.1);
-  box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
-}
-
-/* Progress bar */
-.progress-bar {
-  background: linear-gradient(90deg, #a855f7 0%, #22c55e 100%);
-  box-shadow: 0 0 10px #a855f780;
-}
-
-/* Card hover effect */
-.card-hover {
-  transition: all 0.3s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
