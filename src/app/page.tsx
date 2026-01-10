@@ -3,15 +3,24 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Sparkles, Loader2, Zap, Brain, Trophy, Send, Users, Clock, Target, LogOut, LayoutDashboard } from 'lucide-react';
+import {
+  FileText, Sparkles, Loader2, Zap, Brain, Trophy, Send, Users,
+  Clock, Target, LogOut, LayoutDashboard, GraduationCap, Upload
+} from 'lucide-react';
+import { extractTextFromPDF } from '@/lib/pdf';
 
 export default function Home() {
   const router = useRouter();
+  const [view, setView] = useState<'landing' | 'create' | 'join'>('landing');
+
+  // Create State
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [user, setUser] = useState<{ id: string; username: string } | null>(null);
+  const [quizIdInput, setQuizIdInput] = useState('');
 
   // Check auth state
   useEffect(() => {
@@ -24,6 +33,7 @@ export default function Home() {
   const handleLogout = () => {
     localStorage.removeItem('kuiquizz_user');
     setUser(null);
+    setView('landing'); // Go back to landing on logout
   };
 
   const loadingSteps = [
@@ -32,9 +42,41 @@ export default function Home() {
     '✨ Preparando tu quiz...',
   ];
 
+  /* -------------------------------------------------------------------------- */
+  /*                                PDF HANDLING                                */
+  /* -------------------------------------------------------------------------- */
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      setError('Por favor sube solo archivos PDF');
+      return;
+    }
+
+    setIsProcessingFile(true);
+    setError(null);
+
+    try {
+      const extractedText = await extractTextFromPDF(file);
+      if (extractedText.length < 50) {
+        throw new Error('El PDF parece estar vacío o es una imagen escaneada sin texto seleccionable.');
+      }
+      setText(extractedText);
+      // Optional: Clear file input?
+    } catch (err: any) {
+      setError(err.message || 'Error al leer el PDF');
+    } finally {
+      setIsProcessingFile(false);
+    }
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /*                                QUIZ CREATION                               */
+  /* -------------------------------------------------------------------------- */
   const handleSubmit = useCallback(async () => {
     if (!text.trim()) {
-      setError('Por favor, pega algún texto primero');
+      setError('Por favor, pega algún texto o sube un PDF primero');
       return;
     }
 
@@ -42,10 +84,9 @@ export default function Home() {
     setIsLoading(true);
     setLoadingStep(0);
 
-    // Animate through loading steps
     const interval = setInterval(() => {
       setLoadingStep((prev) => (prev < 2 ? prev + 1 : prev));
-    }, 1500);
+    }, 2500); // Slightly slower to account for deepseek latency
 
     try {
       const response = await fetch('/api/create-quiz', {
@@ -74,40 +115,137 @@ export default function Home() {
       setError(err instanceof Error ? err.message : 'Algo salió mal');
       setIsLoading(false);
     }
-  }, [text, router]);
+  }, [text, router, user]);
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Animated background with Kahoot-style colors */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-0 left-0 w-full h-full"
-          style={{
-            background: 'radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 70%)'
-          }}
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/20 rounded-full blur-3xl"
-        />
+  const handleJoinGame = () => {
+    if (!quizIdInput.trim()) return;
+    router.push(`/play/${quizIdInput}`);
+  };
+
+  /* -------------------------------------------------------------------------- */
+  /*                                VIEW: LANDING                               */
+  /* -------------------------------------------------------------------------- */
+  if (view === 'landing') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-slate-950">
+        <BackgroundEffects />
+
+        <div className="relative z-10 max-w-4xl w-full text-center">
+          {/* Header */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mb-12"
+          >
+            <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent tracking-tight mb-4 drop-shadow-2xl">
+              KuiQuizz
+            </h1>
+            <p className="text-xl md:text-2xl text-slate-300 font-light">
+              La plataforma educativa del futuro
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8 w-full max-w-3xl mx-auto">
+            {/* Card Profesor */}
+            <motion.button
+              whileHover={{ scale: 1.05, translateY: -5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (user) setView('create');
+                else router.push('/auth');
+              }}
+              className="group relative p-8 rounded-3xl bg-gradient-to-br from-violet-600/20 to-purple-900/40 border border-violet-500/30 hover:border-violet-400 transition-all text-left flex flex-col h-64 justify-between overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-violet-600/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative z-10">
+                <div className="p-3 bg-violet-500/20 rounded-2xl w-fit mb-4 group-hover:bg-violet-500 group-hover:text-white transition-colors text-violet-300">
+                  <LayoutDashboard className="w-8 h-8" />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">Soy Profesor</h2>
+                <p className="text-violet-200">Crear quizzes con IA, gestionar clases y ver estadísticas.</p>
+              </div>
+              <div className="flex items-center gap-2 text-violet-300 group-hover:text-white font-medium">
+                Crear ahora <ArrowRight className="w-4 h-4" />
+              </div>
+            </motion.button>
+
+            {/* Card Estudiante */}
+            <motion.button
+              whileHover={{ scale: 1.05, translateY: -5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setView('join')}
+              className="group relative p-8 rounded-3xl bg-gradient-to-br from-cyan-600/20 to-blue-900/40 border border-cyan-500/30 hover:border-cyan-400 transition-all text-left flex flex-col h-64 justify-between overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative z-10">
+                <div className="p-3 bg-cyan-500/20 rounded-2xl w-fit mb-4 group-hover:bg-cyan-500 group-hover:text-white transition-colors text-cyan-300">
+                  <GraduationCap className="w-8 h-8" />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">Soy Estudiante</h2>
+                <p className="text-cyan-200">Unirme a una partida, repasar materias y competir.</p>
+              </div>
+              <div className="flex items-center gap-2 text-cyan-300 group-hover:text-white font-medium">
+                Unirse a juego <ArrowRight className="w-4 h-4" />
+              </div>
+            </motion.button>
+          </div>
+        </div>
       </div>
+    );
+  }
 
-      {/* Main content */}
+  /* -------------------------------------------------------------------------- */
+  /*                                 VIEW: JOIN                                 */
+  /* -------------------------------------------------------------------------- */
+  if (view === 'join') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-950 relative overflow-hidden">
+        <BackgroundEffects />
+        <div className="relative z-10 w-full max-w-md">
+          <button onClick={() => setView('landing')} className="mb-8 text-slate-400 hover:text-white flex items-center gap-2">
+            ← Volver
+          </button>
+
+          <div className="glass rounded-3xl p-8 border border-slate-700/50 shadow-2xl text-center">
+            <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Zap className="w-8 h-8 text-cyan-400" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-2">¡A Jugar!</h2>
+            <p className="text-slate-400 mb-8">Ingresa el ID del Quiz que te dio tu profesor.</p>
+
+            <input
+              type="text"
+              value={quizIdInput}
+              onChange={(e) => setQuizIdInput(e.target.value)}
+              placeholder="Ej: 8f4a..."
+              className="w-full text-center text-2xl font-bold bg-slate-900/50 border border-slate-700 rounded-xl py-4 mb-4 text-white focus:border-cyan-500 focus:outline-none placeholder:text-slate-700 uppercase tracking-widest"
+            />
+
+            <button
+              onClick={handleJoinGame}
+              disabled={!quizIdInput.trim()}
+              className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-bold text-white shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Entrar al Quiz
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  /* -------------------------------------------------------------------------- */
+  /*                                VIEW: CREATE                                */
+  /* -------------------------------------------------------------------------- */
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-slate-950">
+      <BackgroundEffects />
 
       {/* Auth Status Bar */}
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+        <button onClick={() => setView('landing')} className="text-slate-400 hover:text-white px-3 text-sm">Inicio</button>
         {user ? (
           <div className="flex items-center gap-3 bg-slate-800/80 backdrop-blur-md p-2 pl-4 rounded-full border border-slate-700/50">
             <div className="flex items-center gap-2">
@@ -131,165 +269,115 @@ export default function Home() {
               <LogOut className="w-4 h-4" />
             </button>
           </div>
-        ) : (
-          <button
-            onClick={() => router.push('/auth')}
-            className="flex items-center gap-2 px-6 py-2.5 bg-white/10 hover:bg-white/20 
-                       backdrop-blur-md border border-white/20 rounded-full font-medium transition-all"
-          >
-            <Users className="w-4 h-4" /> Login / Registrarse
-          </button>
-        )}
+        ) : null}
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-2xl text-center"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative z-10 w-full max-w-3xl"
       >
-        {/* Logo & Title - Kahoot style */}
-        <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5, type: 'spring' }}
-          className="mb-8"
-        >
-          <motion.div
-            className="flex items-center justify-center gap-3 mb-4"
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <Sparkles className="w-10 h-10 text-purple-400" />
-            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent tracking-tight">
-              KuiQuizz
-            </h1>
-            <Zap className="w-10 h-10 text-cyan-400" />
-          </motion.div>
-          <p className="text-slate-400 text-lg md:text-xl">
-            Transforma cualquier texto en un quiz interactivo 🎮
-          </p>
-        </motion.div>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-black text-white mb-2">Crear Nuevo Quiz</h1>
+          <p className="text-slate-400">Pega tu texto o sube un PDF para generar preguntas automáticamente.</p>
+        </div>
 
-        {/* Stats/Features - Kahoot style */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="flex justify-center gap-6 md:gap-10 mb-8"
-        >
-          {[
-            { icon: Brain, label: 'IA Potente', value: 'Gemini', color: 'text-purple-400' },
-            { icon: Zap, label: 'Instantáneo', value: '5 seg', color: 'text-yellow-400' },
-            { icon: Trophy, label: 'Gamificado', value: 'Top 10', color: 'text-green-400' },
-          ].map((feature, idx) => (
-            <motion.div
-              key={feature.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + idx * 0.1 }}
-              className="flex flex-col items-center gap-1"
-            >
-              <div className={`p-3 rounded-2xl bg-slate-800/50 border border-slate-700/50 ${feature.color}`}>
-                <feature.icon className="w-6 h-6" />
-              </div>
-              <span className="text-white font-bold text-sm">{feature.value}</span>
-              <span className="text-slate-500 text-xs">{feature.label}</span>
-            </motion.div>
-          ))}
-        </motion.div>
+        <div className="glass rounded-3xl p-6 md:p-8 border border-slate-700/50 shadow-2xl">
 
-        {/* Text Input Area - Improved */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-          className="glass rounded-3xl p-6 border border-slate-700/50 shadow-2xl"
-        >
-          <div className="flex items-center gap-2 mb-4 text-left">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <FileText className="w-5 h-5 text-purple-400" />
+          {/* Tabs / Input Type Selector */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 h-32 border-2 border-dashed border-slate-700 hover:border-purple-500 rounded-2xl flex flex-col items-center justify-center bg-slate-900/40 hover:bg-slate-900/60 transition-all cursor-pointer relative group">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                disabled={isLoading || isProcessingFile}
+              />
+              {isProcessingFile ? (
+                <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-2" />
+              ) : (
+                <Upload className="w-8 h-8 text-purple-500 group-hover:scale-110 transition-transform mb-2" />
+              )}
+              <span className="font-medium text-slate-300 group-hover:text-white">
+                {isProcessingFile ? 'Leyendo PDF...' : 'Subir PDF'}
+              </span>
+              <span className="text-xs text-slate-500 mt-1">Click o arrastra aquí</span>
             </div>
-            <div>
-              <span className="text-white font-semibold block">Pega tu contenido</span>
-              <span className="text-slate-500 text-sm">PDF, artículo, apuntes o cualquier texto</span>
+
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-slate-500 font-bold">O</div>
+
+            <div className="flex-1 h-32 border-2 border-transparent bg-slate-800/50 rounded-2xl flex flex-col items-center justify-center text-slate-400">
+              <FileText className="w-8 h-8 mb-2" />
+              <span>Pegar Texto abajo</span>
             </div>
           </div>
 
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Copia el texto de cualquier PDF, artículo de Wikipedia, libro o apuntes de clase...
-
-La IA generará 5 preguntas de opción múltiple basadas en tu contenido. ¡Entre más contenido des, mejores serán las preguntas!"
-            disabled={isLoading}
-            className="w-full h-44 px-4 py-3 bg-slate-800/70 border border-slate-600/50 rounded-2xl
-                       text-white placeholder-slate-500 resize-none text-base
+            placeholder="Si no tienes un PDF, pega aquí el texto de tus apuntes, libro o artículo..."
+            disabled={isLoading || isProcessingFile}
+            className="w-full h-64 px-4 py-4 bg-slate-800/70 border border-slate-600/50 rounded-2xl
+                       text-white placeholder-slate-500 resize-none text-lg leading-relaxed
                        focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30
-                       transition-all duration-300 disabled:opacity-50"
+                       transition-all duration-300 disabled:opacity-50 mb-4 font-sans"
           />
 
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Target className="w-4 h-4" />
-              <span>{text.length.toLocaleString()} / 50,000 caracteres</span>
+              {text.length > 0 && (
+                <span className="text-green-400 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> {text.length.toLocaleString()} caracteres listos
+                </span>
+              )}
             </div>
 
             <motion.button
               onClick={handleSubmit}
-              disabled={isLoading || !text.trim()}
+              disabled={isLoading || !text.trim() || isProcessingFile}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500
-                         rounded-xl text-white font-bold shadow-lg shadow-purple-500/25
+              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500
+                         rounded-xl text-white font-bold text-lg shadow-lg shadow-purple-500/25
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-                         flex items-center gap-2 transition-all duration-300"
+                         flex items-center gap-3 transition-all duration-300"
             >
               {isLoading ? (
                 <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <Loader2 className="w-5 h-5" />
-                  </motion.div>
-                  Generando...
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  Generando Quiz...
                 </>
               ) : (
                 <>
-                  Crear Quiz <Send className="w-5 h-5" />
+                  Generar Quiz con IA <Zap className="w-5 h-5 fill-white" />
                 </>
               )}
             </motion.button>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Loading Progress - Kahoot style */}
+        {/* Loading Overlay */}
         <AnimatePresence>
           {isLoading && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mt-6 glass rounded-2xl p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mt-6 glass rounded-2xl p-6 text-center"
             >
-              <div className="flex items-center justify-center gap-3">
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                  className="text-2xl"
-                >
-                  {loadingSteps[loadingStep].split(' ')[0]}
-                </motion.div>
-                <span className="text-white font-medium">
-                  {loadingSteps[loadingStep].substring(2)}
-                </span>
+              <div className="text-2xl mb-2 animate-bounce">
+                {loadingSteps[loadingStep].split(' ')[0]}
               </div>
-              <div className="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <h3 className="text-xl font-bold text-white mb-1">
+                {loadingSteps[loadingStep].substring(2)}
+              </h3>
+              <p className="text-slate-400 text-sm">Esto puede tomar unos segundos, DeepSeek está pensando...</p>
+              <div className="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden max-w-xs mx-auto">
                 <motion.div
                   initial={{ width: '0%' }}
                   animate={{ width: `${((loadingStep + 1) / 3) * 100}%` }}
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
                   transition={{ duration: 0.5 }}
                 />
               </div>
@@ -297,37 +385,57 @@ La IA generará 5 preguntas de opción múltiple basadas en tu contenido. ¡Entr
           )}
         </AnimatePresence>
 
-        {/* Error message */}
         <AnimatePresence>
           {error && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400"
+              className="mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 flex items-center gap-3"
             >
-              ❌ {error}
+              <div className="p-2 bg-red-500/20 rounded-lg">❌</div>
+              <div>
+                <div className="font-bold">Error</div>
+                <div className="text-sm opacity-80">{error}</div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Tips - Improved */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="mt-8 flex flex-wrap justify-center gap-3"
-        >
-          {['� PDFs', '📰 Artículos', '📝 Apuntes', '🌐 Wikipedia'].map((tip, i) => (
-            <span
-              key={tip}
-              className="px-3 py-1.5 bg-slate-800/50 rounded-full text-slate-400 text-sm border border-slate-700/50"
-            >
-              {tip}
-            </span>
-          ))}
-        </motion.div>
       </motion.div>
     </div>
   );
+}
+
+function BackgroundEffects() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <motion.div
+        className="absolute top-0 left-0 w-full h-full"
+        style={{
+          background: 'radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 70%)'
+        }}
+      />
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
+      />
+      <motion.div
+        animate={{
+          scale: [1.2, 1, 1.2],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
+      />
+    </div>
+  )
+}
+
+// Icon helper components to be clean
+function ArrowRight(props: any) {
+  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
 }
