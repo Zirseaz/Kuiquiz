@@ -9,12 +9,12 @@ import {
     signOut as firebaseSignOut
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 
 // ------------------------------------------------------------------
-// CONFIG: TEACHER WHITELIST
+// FALLBACK: HARDCODED TEACHER WHITELIST (used if Firestore fails)
 // ------------------------------------------------------------------
-const TEACHER_EMAILS = [
+const FALLBACK_TEACHER_EMAILS = [
     'cuevasr.sebastian@gmail.com',
     'felipefriasj@gmail.com',
     'cesar.toro.g@gmail.com',
@@ -31,20 +31,41 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+// Check if email is in Firestore authorized_teachers collection
+async function checkIsTeacher(email: string): Promise<boolean> {
+    try {
+        // First check Firestore
+        const teachersRef = collection(db, 'authorized_teachers');
+        const q = query(teachersRef, where('email', '==', email.toLowerCase()));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            return true;
+        }
+
+        // Fallback to hardcoded list
+        return FALLBACK_TEACHER_EMAILS.includes(email.toLowerCase());
+    } catch (error) {
+        console.error('Error checking teacher status:', error);
+        // On error, fall back to hardcoded list
+        return FALLBACK_TEACHER_EMAILS.includes(email.toLowerCase());
+    }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [isTeacher, setIsTeacher] = useState(false);
 
     useEffect(() => {
-        // Persistent listener via Firebase SDK
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setLoading(true);
             if (currentUser) {
                 setUser(currentUser);
-                // Check Whitelist
-                const isAllowedTeacher = TEACHER_EMAILS.includes(currentUser.email || '');
-                setIsTeacher(isAllowedTeacher);
+
+                // Check if user is authorized teacher (Firestore + fallback)
+                const teacherStatus = await checkIsTeacher(currentUser.email || '');
+                setIsTeacher(teacherStatus);
 
                 // Sync user to Firestore if new
                 try {
@@ -56,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             email: currentUser.email,
                             displayName: currentUser.displayName,
                             photoURL: currentUser.photoURL,
-                            role: isAllowedTeacher ? 'teacher' : 'student',
+                            role: teacherStatus ? 'teacher' : 'student',
                             createdAt: new Date().toISOString()
                         });
                     }

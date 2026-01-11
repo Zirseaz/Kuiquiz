@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Groq } from 'groq-sdk';
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
 export const maxDuration = 60;
-
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
 
 export interface QuizQuestion {
     question: string;
@@ -16,7 +11,7 @@ export interface QuizQuestion {
 }
 
 export interface Quiz {
-    id: string; // Will now be Firestore ID
+    id: string;
     title: string;
     topic: string;
     description: string;
@@ -38,14 +33,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const truncatedText = text.slice(0, 50000);
+        const truncatedText = text.slice(0, 30000);
 
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: 'system',
-                    content: `Eres un experto profesor que crea quizzes de alta calidad. Tu trabajo es leer un texto proporcionado y generar 5 preguntas de selección múltiple (4 opciones cada una) que evalúen la comprensión de los conceptos clave.
-                    
+        const apiKey = process.env.DEEPSEEK_API_KEY;
+        if (!apiKey) {
+            console.error('DEEPSEEK_API_KEY not configured');
+            return NextResponse.json(
+                { error: 'API no configurada. Contacta al administrador.' },
+                { status: 500 }
+            );
+        }
+
+        const systemPrompt = `Eres un experto profesor que crea quizzes de alta calidad. Tu trabajo es leer un texto proporcionado y generar 5 preguntas de selección múltiple (4 opciones cada una) que evalúen la comprensión de los conceptos clave.
+
 Reglas:
 1. Genera SIEMPRE 5 preguntas.
 2. Las preguntas deben ser desafiantes pero justas.
@@ -64,24 +64,48 @@ Reglas:
         }
     ]
 }
-NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`
-                },
-                {
-                    role: 'user',
-                    content: `Genera un quiz basado en este texto:\n\n${truncatedText}`
-                }
-            ],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.5,
-            response_format: { type: 'json_object' },
+NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`;
+
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: `Genera un quiz basado en este texto:\n\n${truncatedText}` }
+                ],
+                temperature: 0.5,
+                response_format: { type: 'json_object' }
+            })
         });
 
-        const content = completion.choices[0]?.message?.content;
-        if (!content) throw new Error('No se generó contenido');
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('DeepSeek API Error:', errorText);
+            return NextResponse.json(
+                { error: 'Error con la IA. Verifica tu API key o intenta de nuevo.' },
+                { status: 500 }
+            );
+        }
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+
+        if (!content) {
+            throw new Error('No se generó contenido');
+        }
 
         const quizData = JSON.parse(content);
 
-        // Add metadata
+        // Validate quiz structure
+        if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
+            throw new Error('Quiz inválido generado');
+        }
+
         const quizWithMeta = {
             ...quizData,
             createdAt: new Date().toISOString(),
@@ -89,7 +113,6 @@ NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`
             creatorName: username || 'Anónimo',
         };
 
-        // Save to Firestore
         const docRef = await addDoc(collection(db, 'quizzes'), quizWithMeta);
 
         return NextResponse.json({
@@ -98,10 +121,10 @@ NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`
             totalQuestions: quizData.questions.length
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating quiz:', error);
         return NextResponse.json(
-            { error: 'Error generando el quiz. Intenta de nuevo.' },
+            { error: error.message || 'Error generando el quiz. Intenta de nuevo.' },
             { status: 500 }
         );
     }
