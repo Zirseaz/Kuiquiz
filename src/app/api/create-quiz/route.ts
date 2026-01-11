@@ -10,15 +10,26 @@ export interface QuizQuestion {
     answer: number;
 }
 
-export interface Quiz {
-    id: string;
-    title: string;
-    topic: string;
-    description: string;
-    questions: QuizQuestion[];
-    createdAt: string;
-    creatorId?: string;
-    creatorName?: string;
+// Helper function to extract JSON from text that might have markdown
+function extractJSON(text: string): any {
+    // Try direct parse first
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        // Try to find JSON in markdown code block
+        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[1].trim());
+        }
+
+        // Try to find JSON object pattern
+        const objectMatch = text.match(/\{[\s\S]*\}/);
+        if (objectMatch) {
+            return JSON.parse(objectMatch[0]);
+        }
+
+        throw new Error('No valid JSON found in response');
+    }
 }
 
 export async function POST(request: NextRequest) {
@@ -29,7 +40,6 @@ export async function POST(request: NextRequest) {
         const { text, userId, username } = body;
 
         console.log('Text length:', text?.length);
-        console.log('UserId:', userId);
 
         if (!text || text.length < 50) {
             return NextResponse.json(
@@ -38,40 +48,28 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const truncatedText = text.slice(0, 15000); // Reduced to speed up
+        const truncatedText = text.slice(0, 12000);
 
         const apiKey = process.env.DEEPSEEK_API_KEY;
-        console.log('API Key exists:', !!apiKey);
-        console.log('API Key prefix:', apiKey?.substring(0, 10));
-
         if (!apiKey) {
             return NextResponse.json(
-                { error: 'DEEPSEEK_API_KEY no configurada en Vercel' },
+                { error: 'DEEPSEEK_API_KEY no configurada' },
                 { status: 500 }
             );
         }
 
-        const systemPrompt = `Eres un experto profesor. Genera un quiz con exactamente 5 preguntas de selección múltiple basado en el texto proporcionado.
+        const systemPrompt = `Eres un profesor experto creando quizzes educativos.
 
-Responde SOLO con JSON válido en este formato exacto:
-{
-    "title": "Título del Quiz",
-    "topic": "Tema principal",
-    "description": "Descripción breve",
-    "questions": [
-        {
-            "question": "Pregunta 1?",
-            "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
-            "answer": 0
-        }
-    ]
-}
+INSTRUCCIONES:
+1. Lee el texto del usuario
+2. Crea exactamente 5 preguntas de opción múltiple
+3. Cada pregunta tiene 4 opciones (A, B, C, D)
+4. Indica la respuesta correcta como número (0=A, 1=B, 2=C, 3=D)
 
-IMPORTANTE: Solo responde con el JSON, sin texto adicional.`;
+RESPONDE ÚNICAMENTE con este JSON (sin texto adicional, sin markdown):
+{"title":"Título del Quiz","topic":"Tema","description":"Descripción","questions":[{"question":"Pregunta?","options":["A","B","C","D"],"answer":0}]}`;
 
-        console.log('Calling DeepSeek API...');
-        const startTime = Date.now();
-
+        console.log('Calling DeepSeek...');
         const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
             headers: {
@@ -82,79 +80,75 @@ IMPORTANTE: Solo responde con el JSON, sin texto adicional.`;
                 model: 'deepseek-chat',
                 messages: [
                     { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `Genera un quiz basado en este texto:\n\n${truncatedText}` }
+                    { role: 'user', content: truncatedText }
                 ],
-                temperature: 0.3,
-                max_tokens: 2000
+                temperature: 0.2,
+                max_tokens: 2500
             })
         });
 
-        const elapsed = Date.now() - startTime;
-        console.log('DeepSeek response received in', elapsed, 'ms');
-        console.log('Response status:', response.status);
-
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('DeepSeek API Error:', response.status, errorText);
+            console.error('DeepSeek Error:', response.status, errorText);
             return NextResponse.json(
-                { error: `Error de DeepSeek (${response.status}): ${errorText.substring(0, 100)}` },
+                { error: `DeepSeek error: ${response.status}` },
                 { status: 500 }
             );
         }
 
         const data = await response.json();
-        console.log('DeepSeek response keys:', Object.keys(data));
-
         const content = data.choices?.[0]?.message?.content;
-        console.log('Content received, length:', content?.length);
+
+        console.log('Raw content from DeepSeek:', content?.substring(0, 200));
 
         if (!content) {
-            console.error('No content in response:', JSON.stringify(data));
             return NextResponse.json(
-                { error: 'DeepSeek no generó contenido' },
+                { error: 'DeepSeek no respondió' },
                 { status: 500 }
             );
         }
 
-        // Parse the quiz JSON
+        // Extract JSON even if wrapped in markdown
         let quizData;
         try {
-            quizData = JSON.parse(content);
-        } catch (parseError) {
-            console.error('Failed to parse quiz JSON:', content);
+            quizData = extractJSON(content);
+        } catch (parseError: any) {
+            console.error('JSON parse failed. Raw content:', content);
             return NextResponse.json(
-                { error: 'La IA generó una respuesta inválida. Intenta de nuevo.' },
+                { error: 'Formato de respuesta inválido. Intenta con otro texto.' },
                 { status: 500 }
             );
         }
 
-        if (!quizData.questions || !Array.isArray(quizData.questions)) {
-            console.error('Invalid quiz structure:', quizData);
+        // Validate structure
+        if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
             return NextResponse.json(
-                { error: 'Quiz inválido generado' },
+                { error: 'Quiz sin preguntas generadas' },
                 { status: 500 }
             );
         }
 
         const quizWithMeta = {
-            ...quizData,
+            title: quizData.title || 'Quiz sin título',
+            topic: quizData.topic || 'General',
+            description: quizData.description || '',
+            questions: quizData.questions,
             createdAt: new Date().toISOString(),
             creatorId: userId || 'anonymous',
             creatorName: username || 'Anónimo',
         };
 
-        // Try to save to Firestore
+        // Save to Firestore
         let quizId = `temp-${Date.now()}`;
         try {
             const docRef = await addDoc(collection(db, 'quizzes'), quizWithMeta);
             quizId = docRef.id;
-            console.log('Quiz saved to Firestore:', quizId);
-        } catch (firestoreError: any) {
-            console.error('Firestore save failed:', firestoreError.message);
-            // Continue anyway with temp ID
+            console.log('Saved to Firestore:', quizId);
+        } catch (e: any) {
+            console.error('Firestore error:', e.message);
         }
 
-        console.log('=== QUIZ CREATED SUCCESSFULLY ===');
+        console.log('=== SUCCESS ===');
         return NextResponse.json({
             success: true,
             quizId: quizId,
@@ -162,9 +156,9 @@ IMPORTANTE: Solo responde con el JSON, sin texto adicional.`;
         });
 
     } catch (error: any) {
-        console.error('=== QUIZ CREATION ERROR ===', error);
+        console.error('Error:', error);
         return NextResponse.json(
-            { error: error.message || 'Error interno del servidor' },
+            { error: error.message || 'Error interno' },
             { status: 500 }
         );
     }
