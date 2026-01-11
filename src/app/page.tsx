@@ -85,9 +85,11 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-3xl pointer-events-none" />
 
             <div className="relative z-10 text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-indigo-500/20">
-                <span className="text-3xl font-bold text-white">K</span>
-              </div>
+              <img
+                src="/logo.png"
+                alt="KuiQuizz"
+                className="w-20 h-20 mx-auto mb-6 rounded-2xl shadow-lg shadow-indigo-500/20"
+              />
 
               <h2 className="text-2xl font-bold mb-2">Bienvenido a KuiQuizz</h2>
               <p className="text-slate-400 mb-8 text-sm">
