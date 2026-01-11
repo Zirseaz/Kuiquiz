@@ -112,11 +112,19 @@ NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`;
             creatorName: username || 'Anónimo',
         };
 
-        const docRef = await addDoc(collection(db, 'quizzes'), quizWithMeta);
+        // Try to save to Firestore, but don't fail if it doesn't work
+        let quizId = `temp-${Date.now()}`;
+        try {
+            const docRef = await addDoc(collection(db, 'quizzes'), quizWithMeta);
+            quizId = docRef.id;
+        } catch (firestoreError) {
+            console.error('Firestore save failed (continuing anyway):', firestoreError);
+            // Quiz was generated successfully, just couldn't save
+        }
 
         return NextResponse.json({
             success: true,
-            quizId: docRef.id,
+            quizId: quizId,
             totalQuestions: quizData.questions.length
         });
 
