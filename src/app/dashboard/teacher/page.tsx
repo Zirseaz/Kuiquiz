@@ -108,6 +108,7 @@ export default function TeacherDashboard() {
         try {
             const res = await fetch('/api/create-quiz', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: sourceText,
                     userId: user?.uid,
@@ -115,15 +116,30 @@ export default function TeacherDashboard() {
                 })
             });
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
+            // First get the response as text to handle both JSON and error messages
+            const responseText = await res.text();
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                // If response is not JSON, show the raw error
+                console.error('API Response (not JSON):', responseText);
+                throw new Error('Error del servidor. Intenta nuevamente.');
+            }
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Error desconocido');
+            }
 
             // Success!
             setShowCreateModal(false);
-            fetchMyQuizzes(); // Refresh list
-            alert('¡Quiz creado exitosamente!');
+            setInputText('');
+            fetchMyQuizzes();
+            alert('¡Quiz creado exitosamente! ID: ' + data.quizId);
         } catch (err: any) {
-            alert(err.message);
+            console.error('Quiz creation error:', err);
+            alert(err.message || 'Error creando el quiz');
         } finally {
             setIsProcessing(false);
         }
