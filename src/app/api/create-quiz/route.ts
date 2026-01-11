@@ -22,9 +22,14 @@ export interface Quiz {
 }
 
 export async function POST(request: NextRequest) {
+    console.log('=== CREATE QUIZ API CALLED ===');
+
     try {
         const body = await request.json();
         const { text, userId, username } = body;
+
+        console.log('Text length:', text?.length);
+        console.log('UserId:', userId);
 
         if (!text || text.length < 50) {
             return NextResponse.json(
@@ -33,38 +38,39 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const truncatedText = text.slice(0, 30000);
+        const truncatedText = text.slice(0, 15000); // Reduced to speed up
 
         const apiKey = process.env.DEEPSEEK_API_KEY;
+        console.log('API Key exists:', !!apiKey);
+        console.log('API Key prefix:', apiKey?.substring(0, 10));
+
         if (!apiKey) {
-            console.error('DEEPSEEK_API_KEY not configured');
             return NextResponse.json(
-                { error: 'API no configurada. Contacta al administrador.' },
+                { error: 'DEEPSEEK_API_KEY no configurada en Vercel' },
                 { status: 500 }
             );
         }
 
-        const systemPrompt = `Eres un experto profesor que crea quizzes de alta calidad. Tu trabajo es leer un texto proporcionado y generar 5 preguntas de selección múltiple (4 opciones cada una) que evalúen la comprensión de los conceptos clave.
+        const systemPrompt = `Eres un experto profesor. Genera un quiz con exactamente 5 preguntas de selección múltiple basado en el texto proporcionado.
 
-Reglas:
-1. Genera SIEMPRE 5 preguntas.
-2. Las preguntas deben ser desafiantes pero justas.
-3. Incluye 4 opciones para cada pregunta.
-4. La respuesta correcta debe ser el índice (0, 1, 2, o 3).
-5. Devuelve SOLO un objeto JSON válido con la siguiente estructura:
+Responde SOLO con JSON válido en este formato exacto:
 {
-    "title": "Un título corto y atractivo para el quiz",
-    "topic": "El tema principal del texto",
-    "description": "Una breve descripción de lo que cubre el quiz",
+    "title": "Título del Quiz",
+    "topic": "Tema principal",
+    "description": "Descripción breve",
     "questions": [
         {
-            "question": "¿Cuál es la capital de Francia?",
-            "options": ["Londres", "Berlín", "París", "Madrid"],
-            "answer": 2
+            "question": "Pregunta 1?",
+            "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
+            "answer": 0
         }
     ]
 }
-NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`;
+
+IMPORTANTE: Solo responde con el JSON, sin texto adicional.`;
+
+        console.log('Calling DeepSeek API...');
+        const startTime = Date.now();
 
         const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
@@ -78,31 +84,56 @@ NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`;
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: `Genera un quiz basado en este texto:\n\n${truncatedText}` }
                 ],
-                temperature: 0.5,
-                response_format: { type: 'json_object' }
+                temperature: 0.3,
+                max_tokens: 2000
             })
         });
 
+        const elapsed = Date.now() - startTime;
+        console.log('DeepSeek response received in', elapsed, 'ms');
+        console.log('Response status:', response.status);
+
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('DeepSeek API Error:', errorText);
+            console.error('DeepSeek API Error:', response.status, errorText);
             return NextResponse.json(
-                { error: 'Error con la IA. Verifica tu API key o intenta de nuevo.' },
+                { error: `Error de DeepSeek (${response.status}): ${errorText.substring(0, 100)}` },
                 { status: 500 }
             );
         }
 
         const data = await response.json();
+        console.log('DeepSeek response keys:', Object.keys(data));
+
         const content = data.choices?.[0]?.message?.content;
+        console.log('Content received, length:', content?.length);
 
         if (!content) {
-            throw new Error('No se generó contenido');
+            console.error('No content in response:', JSON.stringify(data));
+            return NextResponse.json(
+                { error: 'DeepSeek no generó contenido' },
+                { status: 500 }
+            );
         }
 
-        const quizData = JSON.parse(content);
+        // Parse the quiz JSON
+        let quizData;
+        try {
+            quizData = JSON.parse(content);
+        } catch (parseError) {
+            console.error('Failed to parse quiz JSON:', content);
+            return NextResponse.json(
+                { error: 'La IA generó una respuesta inválida. Intenta de nuevo.' },
+                { status: 500 }
+            );
+        }
 
-        if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
-            throw new Error('Quiz inválido generado');
+        if (!quizData.questions || !Array.isArray(quizData.questions)) {
+            console.error('Invalid quiz structure:', quizData);
+            return NextResponse.json(
+                { error: 'Quiz inválido generado' },
+                { status: 500 }
+            );
         }
 
         const quizWithMeta = {
@@ -112,16 +143,18 @@ NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`;
             creatorName: username || 'Anónimo',
         };
 
-        // Try to save to Firestore, but don't fail if it doesn't work
+        // Try to save to Firestore
         let quizId = `temp-${Date.now()}`;
         try {
             const docRef = await addDoc(collection(db, 'quizzes'), quizWithMeta);
             quizId = docRef.id;
-        } catch (firestoreError) {
-            console.error('Firestore save failed (continuing anyway):', firestoreError);
-            // Quiz was generated successfully, just couldn't save
+            console.log('Quiz saved to Firestore:', quizId);
+        } catch (firestoreError: any) {
+            console.error('Firestore save failed:', firestoreError.message);
+            // Continue anyway with temp ID
         }
 
+        console.log('=== QUIZ CREATED SUCCESSFULLY ===');
         return NextResponse.json({
             success: true,
             quizId: quizId,
@@ -129,9 +162,9 @@ NO incluyas explicaciones, ni markdown, ni código extra. Solo el JSON puro.`;
         });
 
     } catch (error: any) {
-        console.error('Error creating quiz:', error);
+        console.error('=== QUIZ CREATION ERROR ===', error);
         return NextResponse.json(
-            { error: error.message || 'Error generando el quiz. Intenta de nuevo.' },
+            { error: error.message || 'Error interno del servidor' },
             { status: 500 }
         );
     }
